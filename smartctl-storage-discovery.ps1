@@ -29,7 +29,8 @@ Write-Host "{"
 Write-Host " `"data`":["
 foreach ($device in $smart_scan) {
     # Remove non-working disks
-    # Example: "# /dev/sdb -d scsi"
+    # Example: "# /dev/sdb -d scsi
+    
     if (!$device.StartsWith("# ")) {
         $storage_sn = ""
         $storage_model = ""
@@ -40,13 +41,13 @@ foreach ($device in $smart_scan) {
 
         # Extract and concatenate args
         if ($device -match '(-d) ([A-Za-z0-9/,\+]+)') {
-            $storage_args = $matches[1] + $matches[2]
+            $storage_args = $matches[1] + " " +  $matches[2]
         }
 
         # Get device name
         $storage_name = $device.Substring(0, $device.IndexOf(" "))
-        $info = & $CTL "-i" $storage_name $storage_args
-
+        $info = "C:\'Program Files'\smartmontools\bin\smartctl.exe -i `""+ $storage_name + "`" " + $storage_args
+        $info = Invoke-expression($info)
         # Get device SN
         $sn = ($info | Select-String "serial number:") -ireplace "serial number:"
 
@@ -112,11 +113,14 @@ foreach ($device in $smart_scan) {
                     $json += ",`n"
                 }
 
+                $storage_name = $storage_name -replace ",", "%comma%"
+
                 $json += "`t {`n " +
                         "`t`t`"{#STORAGE.SN}`":`"" + $storage_sn + "`"" + ",`n" +
                         "`t`t`"{#STORAGE.MODEL}`":`"" + $storage_model + "`"" + ",`n" +
                         "`t`t`"{#STORAGE.NAME}`":`"" + $storage_name + "`"" + ",`n" +
-                        "`t`t`"{#STORAGE.CMD}`":`"" + $storage_name + " " + $storage_args + "`"" + ",`n" +
+#                        "`t`t`"{#STORAGE.CMD}`":`"" + $storage_name + " " + $storage_args + "`"" + ",`n" +
+                        "`t`t`"{#STORAGE.CMD}`":`"" + $storage_name + "`"" + ",`n" +
                         "`t`t`"{#STORAGE.SMART}`":`"" + $storage_smart + "`"" + ",`n" +
                         "`t`t`"{#STORAGE.TYPE}`":`"" + $storage_type + "`"" + "`n" +
                         "`t }"
